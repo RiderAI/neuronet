@@ -1,0 +1,24 @@
+{
+  "name": "neuronet-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:classic": "node scripts/build-classic.mjs",
+    "build:all": "npm run build && npm run build:classic",
+    "build:pages": "node scripts/build-pages.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.3.1",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4",
+    "vitest": "4.1.11"
+  }
+}

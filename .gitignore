@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-pages/
+dist-vite/
+.build/
+.build-classic/
+e2e-results/
+artifacts/
+*.log
+.env
+.env.*

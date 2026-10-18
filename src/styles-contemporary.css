@@ -1,0 +1,697 @@
+/* Contemporary paint layer for the classic interface.
+ * Load after styles-classic.css. Keep its geometry, responsive rules, native
+ * controls, hit targets, window order and scrolling behavior unchanged.
+ * Existing border widths are retained, including the old two-pixel borders.
+ */
+
+html[data-ui="classic"] {
+  --skin-font: "Segoe UI", Tahoma, Arial, sans-serif;
+  --skin-canvas: #edf1f6;
+  --skin-surface: #ffffff;
+  --skin-surface-soft: #f5f7fa;
+  --skin-border: #cbd5e2;
+  --skin-divider: #e1e7ef;
+  --skin-ink: #253449;
+  --skin-muted: #637187;
+  --skin-accent: #365f95;
+  --skin-accent-strong: #284d7d;
+  --skin-accent-soft: #e8f0fb;
+  --skin-success: #277c68;
+  --skin-warning: #926329;
+  --skin-danger: #b14c53;
+  --classic-face: var(--skin-surface-soft);
+  --classic-light: var(--skin-surface);
+  --classic-mid: var(--skin-border);
+  --classic-dark: var(--skin-ink);
+  --classic-blue: var(--skin-border);
+  --classic-title: var(--skin-accent);
+  --ink: var(--skin-ink);
+  --muted: var(--skin-muted);
+  --line: var(--skin-border);
+  --soft-line: var(--skin-divider);
+  color: var(--skin-ink);
+  background: var(--skin-canvas);
+  font-family: var(--skin-font);
+  color-scheme: light;
+  accent-color: var(--skin-accent);
+  scrollbar-color: #b1bdce var(--skin-surface-soft);
+}
+
+html[data-ui="classic"] body {
+  color: var(--skin-ink);
+  background: var(--skin-canvas);
+}
+
+/* Font size and line-height remain those of the compact classic layout. */
+html[data-ui="classic"] button,
+html[data-ui="classic"] input,
+html[data-ui="classic"] select,
+html[data-ui="classic"] .neuron-card-head strong,
+html[data-ui="classic"] .neuron-values,
+html[data-ui="classic"] .chart-grid text,
+html[data-ui="classic"] .chart text,
+html[data-ui="classic"] .settings-panel h3,
+html[data-ui="classic"] .settings-panel h4,
+html[data-ui="classic"] .settings-panel .editor-card h3,
+html[data-ui="classic"] .settings-panel .section-toolbar h3,
+html[data-ui="classic"] .settings-panel .pattern-card h4,
+html[data-ui="classic"] .settings-panel .weights-summary h4,
+html[data-ui="classic"] .neuron-row strong,
+html[data-ui="classic"] .live-value,
+html[data-ui="classic"] .weight-matrix th,
+html[data-ui="classic"] .weight-matrix td,
+html[data-ui="classic"] .simple-table th,
+html[data-ui="classic"] .simple-table td,
+html[data-ui="classic"] .context-help,
+html[data-ui="classic"] .architecture-visual strong,
+html[data-ui="classic"] .settings-panel [data-pattern-dimensions],
+html[data-ui="classic"] .lab-card h4,
+html[data-ui="classic"] .help-modal > header h2 {
+  font-family: var(--skin-font);
+}
+
+html[data-ui="classic"] button,
+html[data-ui="classic"] input,
+html[data-ui="classic"] select { color: var(--skin-ink); }
+
+html[data-ui="classic"] button:focus-visible,
+html[data-ui="classic"] input:focus-visible,
+html[data-ui="classic"] select:focus-visible,
+html[data-ui="classic"] summary:focus-visible,
+html[data-ui="classic"] [tabindex]:focus-visible {
+  outline: 2px solid #7899c5;
+  outline-offset: -2px;
+}
+
+/* Application chrome: the familiar three compact rows remain in place. */
+html[data-ui="classic"] .classic-shell-header {
+  background: var(--skin-surface-soft);
+  border-color: var(--skin-border);
+}
+
+html[data-ui="classic"] .classic-titlebar {
+  color: #fff;
+  background: #2d4f7a;
+}
+
+html[data-ui="classic"] .classic-app-mark i,
+html[data-ui="classic"] .classic-app-mark b,
+html[data-ui="classic"] .classic-app-mark em {
+  background: #b9cde7;
+  border-color: #e2ebf7;
+}
+
+html[data-ui="classic"] .classic-window-buttons button {
+  color: #e2ebf7;
+  background: #355982;
+  border-color: #4c6a91;
+  border-radius: 2px;
+}
+html[data-ui="classic"] .classic-window-buttons button:hover:not(:disabled) {
+  color: #fff;
+  background: #486f9d;
+  border-color: #8ba7cb;
+}
+html[data-ui="classic"] .classic-window-buttons button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+
+html[data-ui="classic"] .classic-menubar {
+  background: var(--skin-surface-soft);
+  border-color: var(--skin-divider);
+}
+
+html[data-ui="classic"] .classic-menu summary { border-radius: 3px; }
+html[data-ui="classic"] .classic-menu summary:hover { background: #e5ebf4; }
+html[data-ui="classic"] .classic-menu[open] summary {
+  color: #fff;
+  background: var(--skin-accent);
+}
+
+html[data-ui="classic"] .classic-menu-popup {
+  background: var(--skin-surface);
+  border-color: transparent;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--skin-border), 0 6px 18px #263c5a26;
+}
+
+html[data-ui="classic"] .classic-menu-popup button { border-radius: 3px; }
+html[data-ui="classic"] .classic-menu-popup button:hover:not(:disabled),
+html[data-ui="classic"] .classic-menu-popup button:focus-visible {
+  color: #fff;
+  background: var(--skin-accent);
+}
+
+html[data-ui="classic"] .classic-menu-popup hr {
+  border-top-color: var(--skin-divider);
+  border-bottom-color: transparent;
+}
+
+html[data-ui="classic"] .classic-toolbar {
+  background: var(--skin-surface-soft);
+  border-top-color: var(--skin-surface);
+  border-bottom-color: var(--skin-border);
+}
+
+html[data-ui="classic"] .classic-tool,
+html[data-ui="classic"] .classic-size-control button {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 3px;
+}
+
+html[data-ui="classic"] .classic-tool:hover:not(:disabled),
+html[data-ui="classic"] .classic-size-control button:hover:not(:disabled) {
+  background: var(--skin-accent-soft);
+  border-color: #b8cae2;
+}
+
+html[data-ui="classic"] .classic-tool:active:not(:disabled),
+html[data-ui="classic"] .classic-size-control button:active:not(:disabled) {
+  background: #dbe7f7;
+  border-color: #9cb5d5;
+}
+
+html[data-ui="classic"] .classic-tool:focus-visible,
+html[data-ui="classic"] .classic-size-control button:focus-visible {
+  outline: 2px solid #7899c5;
+  outline-offset: -2px;
+}
+
+html[data-ui="classic"] .classic-separator {
+  border-left-color: var(--skin-border);
+  border-right-color: transparent;
+}
+
+html[data-ui="classic"] .classic-gold { color: var(--skin-warning); }
+html[data-ui="classic"] .classic-red-dot,
+html[data-ui="classic"] .classic-graph-tool,
+html[data-ui="classic"] .classic-zero-tool { color: var(--skin-accent); }
+html[data-ui="classic"] .classic-run-tool { color: var(--skin-success); }
+html[data-ui="classic"] .classic-stop-tool { color: var(--skin-danger); }
+
+/* Recolor the existing local SVG icons; their paths and hit targets stay intact. */
+html[data-ui="classic"] .classic-tool-icon [stroke="#111"] { stroke: #42546c; }
+html[data-ui="classic"] .classic-tool-icon [fill="#111"] { fill: #42546c; }
+html[data-ui="classic"] .classic-tool-icon [fill="#f4c542"] { fill: #dfc58e; }
+html[data-ui="classic"] .classic-tool-icon [fill="#4c6486"] { fill: #6886ab; }
+html[data-ui="classic"] .classic-tool-icon [fill="#bdbdbd"] { fill: #dce3ec; }
+html[data-ui="classic"] .classic-tool-icon [fill="#f20"] { fill: #6287b2; }
+html[data-ui="classic"] .classic-tool-icon [stroke="#900"] { stroke: #365f95; }
+html[data-ui="classic"] .classic-tool-icon [stroke="#080"] { stroke: #7193b8; }
+html[data-ui="classic"] .classic-tool-icon [stroke="#0000c0"] { stroke: #365f95; }
+html[data-ui="classic"] .classic-tool-icon [fill="#ffef00"] { fill: #e2ebf7; }
+html[data-ui="classic"] .classic-tool-icon [stroke="#947000"] { stroke: #708bad; }
+
+html[data-ui="classic"] .classic-toolbar .runtime-readout {
+  color: var(--skin-muted);
+  background: #edf2f8;
+  border-style: solid;
+  border-color: var(--skin-divider);
+  border-radius: 3px;
+}
+html[data-ui="classic"] .classic-toolbar .runtime-dot { background: #8996a8; }
+html[data-ui="classic"] .classic-toolbar .runtime-dot.running { background: var(--skin-accent); }
+html[data-ui="classic"] .classic-toolbar .runtime-dot.training { background: var(--skin-success); }
+
+/* The resizable neuron field keeps the same 72px tiles and its existing grid. */
+html[data-ui="classic"] main,
+html[data-ui="classic"] .workspace { background: var(--skin-canvas); }
+html[data-ui="classic"] .neuron-panel {
+  background: #e8eef5;
+  border-color: var(--skin-border);
+  border-bottom-style: solid;
+}
+
+html[data-ui="classic"] .classic-workspace-splitter {
+  background: #e2e9f2;
+  border-left-color: #d1dbe8;
+  border-right-color: #edf2f8;
+}
+html[data-ui="classic"] .classic-workspace-splitter::after {
+  border-left-color: #8498b2;
+  border-right-color: #f5f7fa;
+}
+html[data-ui="classic"] .classic-workspace-splitter:hover,
+html[data-ui="classic"] .classic-workspace-splitter:focus-visible,
+html[data-ui="classic"] .classic-workspace-splitter[data-dragging="true"] {
+  background: #cfdef1;
+  box-shadow: inset 0 0 0 1px #9ab5d7;
+}
+
+html[data-ui="classic"] .neuron-card,
+html[data-ui="classic"] .neuron-card.excited,
+html[data-ui="classic"] .neuron-card.negative {
+  color: var(--skin-ink);
+  background: #fafcfe;
+  border-color: #cbd8e7;
+  border-radius: 3px;
+}
+html[data-ui="classic"] .neuron-card:hover,
+html[data-ui="classic"] .neuron-card.excited:hover,
+html[data-ui="classic"] .neuron-card.negative:hover {
+  background: #f0f5fc;
+  border-color: #a0b9d9;
+}
+html[data-ui="classic"] .neuron-card.selected,
+html[data-ui="classic"] .neuron-card.selected.excited,
+html[data-ui="classic"] .neuron-card.selected.negative {
+  background: #e1ecfa;
+  border-color: #779bc9;
+  box-shadow: inset 0 0 0 1px #a1bbdd;
+}
+
+html[data-ui="classic"] .neuron-glyph::before,
+html[data-ui="classic"] .neuron-card.excited .neuron-glyph::before,
+html[data-ui="classic"] .neuron-card.negative .neuron-glyph::before {
+  background: #fff;
+  border-color: #8ca2bd;
+  box-shadow: inset 0 0 0 2px #f1f5fa;
+}
+html[data-ui="classic"] .neuron-glyph::after { border-top-color: #8ca2bd; }
+html[data-ui="classic"] .neuron-glyph b {
+  background: repeating-conic-gradient(from 2deg, #7c9cbe 0deg 7deg, transparent 7deg 29deg);
+}
+html[data-ui="classic"] .neuron-glyph i { background: #62758f; }
+html[data-ui="classic"] .neuron-card.excited .neuron-glyph i { background: #3a76b3; }
+html[data-ui="classic"] .neuron-card.negative .neuron-glyph i { background: #ac783d; }
+html[data-ui="classic"] .neuron-values,
+html[data-ui="classic"] .neuron-values b { color: var(--skin-ink); }
+html[data-ui="classic"] .classic-input-arrow { color: var(--skin-accent); }
+
+/* Floating windows share one neutral frame and a clearly active title strip. */
+html[data-ui="classic"] .settings-panel,
+html[data-ui="classic"] .help-modal {
+  color: var(--skin-ink);
+  background: var(--skin-surface-soft);
+  border-color: transparent;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--skin-border), 0 8px 24px #1d2c4426;
+}
+
+html[data-ui="classic"] .classic-neuron-properties {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-color: var(--skin-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px #1d2c4426;
+}
+
+html[data-ui="classic"] .classic-dialog-title,
+html[data-ui="classic"] .classic-neuron-window-title {
+  color: var(--skin-muted);
+  background: #f0f3f7;
+  box-shadow: inset 0 -1px 0 var(--skin-divider);
+}
+html[data-ui="classic"] .settings-panel[data-classic-active="true"] .classic-dialog-title,
+html[data-ui="classic"] .classic-neuron-properties[data-classic-active="true"] .classic-neuron-window-title {
+  color: #264f81;
+  background: #e3ecf9;
+  box-shadow: inset 0 -1px 0 #c5d5eb;
+}
+
+html[data-ui="classic"] .classic-dialog-title button,
+html[data-ui="classic"] .classic-neuron-window-title button {
+  color: var(--skin-muted);
+  background: transparent;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 3px;
+}
+html[data-ui="classic"] .classic-dialog-title button:hover,
+html[data-ui="classic"] .classic-dialog-title button:focus-visible,
+html[data-ui="classic"] .classic-neuron-window-title button:hover,
+html[data-ui="classic"] .classic-neuron-window-title button:focus-visible {
+  color: #9f3e48;
+  background: #f8e2e5;
+}
+
+html[data-ui="classic"] .settings-panel .tab-content { background: var(--skin-surface-soft); }
+html[data-ui="classic"] .settings-panel h3,
+html[data-ui="classic"] .settings-panel h4,
+html[data-ui="classic"] .settings-panel .editor-card h3,
+html[data-ui="classic"] .settings-panel .section-toolbar h3,
+html[data-ui="classic"] .settings-panel .pattern-card h4,
+html[data-ui="classic"] .settings-panel .weights-summary h4 { color: var(--skin-ink); }
+
+html[data-ui="classic"] .editor-card,
+html[data-ui="classic"] .pattern-card,
+html[data-ui="classic"] .weights-summary,
+html[data-ui="classic"] .subfields,
+html[data-ui="classic"] .lab-card {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--skin-divider);
+}
+
+html[data-ui="classic"] .subfields { background: #f8fafc; }
+html[data-ui="classic"] .subfields legend,
+html[data-ui="classic"] .settings-panel label,
+html[data-ui="classic"] .settings-panel .form-grid label,
+html[data-ui="classic"] .settings-panel .subfields label,
+html[data-ui="classic"] .settings-panel .lab-form label,
+html[data-ui="classic"] .settings-panel .range-label { color: var(--skin-muted); }
+
+html[data-ui="classic"] .live-value {
+  color: var(--skin-accent-strong);
+  background: var(--skin-accent-soft);
+  border-radius: 3px;
+}
+html[data-ui="classic"] .explain-card,
+html[data-ui="classic"] .metric-row > div {
+  color: var(--skin-ink);
+  background: var(--skin-surface-soft);
+  border-style: solid;
+  border-color: var(--skin-divider);
+  border-radius: 3px;
+}
+
+/* Preserve each original border width while replacing the beveled treatment. */
+html[data-ui="classic"] .settings-panel input[type="number"],
+html[data-ui="classic"] .settings-panel input[type="text"],
+html[data-ui="classic"] .settings-panel select,
+html[data-ui="classic"] .settings-panel .form-grid select,
+html[data-ui="classic"] .settings-panel .subfields select,
+html[data-ui="classic"] .settings-panel .lab-form select,
+html[data-ui="classic"] .settings-panel .range-label input,
+html[data-ui="classic"] .settings-panel .simple-table input,
+html[data-ui="classic"] .classic-size-control input,
+html[data-ui="classic"] .lab-variant-wide select {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--skin-border);
+}
+html[data-ui="classic"] .settings-panel .simple-table input[data-vector-input] {
+  border-style: solid;
+  border-color: #becfe4;
+  box-shadow: none;
+}
+
+html[data-ui="classic"] .settings-panel input[type="number"]:hover:not(:disabled),
+html[data-ui="classic"] .settings-panel input[type="text"]:hover:not(:disabled),
+html[data-ui="classic"] .settings-panel select:hover:not(:disabled),
+html[data-ui="classic"] .classic-size-control input:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px #a7bad4;
+}
+
+html[data-ui="classic"] .settings-panel .button,
+html[data-ui="classic"] .settings-panel .primary-button,
+html[data-ui="classic"] .settings-panel .text-button,
+html[data-ui="classic"] .help-modal .button,
+html[data-ui="classic"] .help-modal .primary-button,
+html[data-ui="classic"] .help-modal .text-button {
+  color: var(--skin-ink);
+  background: #f8fafc;
+  border-color: transparent;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--skin-border);
+}
+html[data-ui="classic"] .settings-panel .button:hover:not(:disabled),
+html[data-ui="classic"] .settings-panel .text-button:hover:not(:disabled),
+html[data-ui="classic"] .help-modal .button:hover:not(:disabled),
+html[data-ui="classic"] .help-modal .text-button:hover:not(:disabled) {
+  color: var(--skin-accent-strong);
+  background: var(--skin-accent-soft);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px #a9bedc;
+}
+html[data-ui="classic"] .settings-panel .button:active:not(:disabled),
+html[data-ui="classic"] .settings-panel .text-button:active:not(:disabled) {
+  background: #dce8f7;
+  border-color: transparent;
+}
+
+html[data-ui="classic"] .settings-panel .primary-button,
+html[data-ui="classic"] .help-modal .primary-button {
+  color: #fff;
+  background: var(--skin-accent);
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-ui="classic"] .settings-panel .primary-button:hover:not(:disabled),
+html[data-ui="classic"] .help-modal .primary-button:hover:not(:disabled),
+html[data-ui="classic"] .settings-panel .primary-button:active:not(:disabled) {
+  color: #fff;
+  background: var(--skin-accent-strong);
+  border-color: transparent;
+}
+html[data-ui="classic"] .classic-neuron-close {
+  color: var(--skin-ink);
+  background: var(--skin-surface-soft);
+  border-color: var(--skin-border);
+  border-radius: 3px;
+}
+html[data-ui="classic"] .classic-neuron-close:hover {
+  color: var(--skin-accent-strong);
+  background: var(--skin-accent-soft);
+  border-color: #a9bedc;
+}
+
+html[data-ui="classic"] .context-help {
+  color: var(--skin-muted);
+  background: transparent;
+  border-color: #aab8cb;
+}
+html[data-ui="classic"] .context-help:hover {
+  color: var(--skin-accent-strong);
+  background: var(--skin-accent-soft);
+  border-color: #829fc3;
+}
+
+/* Dense data stays dense; only the grids, sticky headers and focus are painted. */
+html[data-ui="classic"] .neuron-roster,
+html[data-ui="classic"] .matrix-scroll,
+html[data-ui="classic"] .simple-table-wrap,
+html[data-ui="classic"] .perceptron-weights-scroll,
+html[data-ui="classic"] .training-examples-scroll {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-style: solid;
+  border-color: var(--skin-divider);
+  border-radius: 3px;
+}
+
+html[data-ui="classic"] .neuron-row {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-bottom-color: var(--skin-divider);
+}
+html[data-ui="classic"] .neuron-row strong { color: var(--skin-ink); }
+html[data-ui="classic"] .neuron-row:hover { background: #f0f5fc; }
+html[data-ui="classic"] .neuron-row.selected {
+  color: #244b7c;
+  background: var(--skin-accent-soft);
+  box-shadow: inset 2px 0 0 #7397c5;
+}
+html[data-ui="classic"] .neuron-row.selected strong { color: #244b7c; }
+html[data-ui="classic"] .neuron-row .role {
+  color: var(--skin-muted);
+  background: #edf1f6;
+  border-radius: 2px;
+}
+
+html[data-ui="classic"] .weight-matrix,
+html[data-ui="classic"] .simple-table,
+html[data-ui="classic"] .perceptron-weight-table,
+html[data-ui="classic"] .training-examples-table { color: var(--skin-ink); }
+
+html[data-ui="classic"] .weight-matrix th,
+html[data-ui="classic"] .weight-matrix td,
+html[data-ui="classic"] .simple-table th,
+html[data-ui="classic"] .simple-table td,
+html[data-ui="classic"] .weights-summary .perceptron-weight-table th,
+html[data-ui="classic"] .weights-summary .perceptron-weight-table td,
+html[data-ui="classic"] .training-examples-table th,
+html[data-ui="classic"] .training-examples-table td {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-color: var(--skin-divider);
+}
+
+html[data-ui="classic"] .weight-matrix thead th,
+html[data-ui="classic"] .weight-matrix tbody th,
+html[data-ui="classic"] .simple-table thead th,
+html[data-ui="classic"] .simple-table tbody th,
+html[data-ui="classic"] .weights-summary .perceptron-weight-table thead th,
+html[data-ui="classic"] .weights-summary .perceptron-weight-table tbody th:first-child,
+html[data-ui="classic"] .training-examples-table thead th {
+  color: #455a76;
+  background: #edf2f8;
+}
+html[data-ui="classic"] .weight-matrix td.diagonal-cell { background: #e9eef5; }
+html[data-ui="classic"] .weight-matrix .blocked-cell { color: #8793a5; background: #edf1f6; }
+html[data-ui="classic"] .simple-table .active-vector { background: #eef4fd; }
+html[data-ui="classic"] .simple-table .inactive-vector { background: #f7f9fc; }
+html[data-ui="classic"] .training-examples-table td:first-child small,
+html[data-ui="classic"] .training-examples-table tbody th:first-child small { color: var(--skin-muted); }
+
+/* Pattern editing and topology retain their original size and arrangement. */
+html[data-ui="classic"] .architecture-visual {
+  background: #f8fafc;
+  border-style: solid;
+  border-color: var(--skin-divider);
+  border-radius: 3px;
+}
+html[data-ui="classic"] .architecture-visual > div {
+  color: #fff;
+  background: #4c709e;
+  border-color: #3e608c;
+}
+html[data-ui="classic"] .architecture-visual > i { color: #879bb5; }
+html[data-ui="classic"] .training-state { color: var(--skin-muted); }
+html[data-ui="classic"] .training-state i { background: #af8149; border-color: #9c703b; }
+html[data-ui="classic"] .training-state.success i { background: var(--skin-success); border-color: #226c5b; }
+html[data-ui="classic"] .settings-panel [data-pattern-dimensions] { color: var(--skin-muted); }
+html[data-ui="classic"] .pattern-grid { background: var(--skin-divider); border-radius: 3px; }
+html[data-ui="classic"] .pattern-bit {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-color: #d4deeb;
+  border-radius: 2px;
+}
+html[data-ui="classic"] .pattern-bit:hover { background: #eef4fc; border-color: #8eaace; }
+html[data-ui="classic"] .pattern-bit.on { color: #fff; background: #416ca3; border-color: #335b90; }
+html[data-ui="classic"] .pattern-bit.on:hover { background: #365f95; border-color: #284d7d; }
+html[data-ui="classic"] .pattern-card code {
+  color: var(--skin-muted);
+  background: var(--skin-surface-soft);
+  border-style: solid;
+  border-color: var(--skin-divider);
+  border-radius: 3px;
+}
+html[data-ui="classic"] .pattern-resize-handle {
+  color: #718aa9;
+  background: #edf2f8;
+  border-style: solid;
+  border-color: #c3d1e2;
+  border-radius: 3px;
+}
+html[data-ui="classic"] .pattern-resize-handle:hover,
+html[data-ui="classic"] .pattern-resize-handle:active {
+  color: var(--skin-accent-strong);
+  background: var(--skin-accent-soft);
+}
+html[data-ui="classic"] .pattern-resize-handle:focus-visible {
+  outline: 2px solid #7899c5;
+  outline-offset: -2px;
+}
+
+html[data-ui="classic"] .training-problem,
+html[data-ui="classic"] .settings-panel .training-compat-note.has-issue {
+  color: #7c5a2d;
+  background: #fff8eb;
+  border-color: #e7d5b8;
+  border-radius: 3px;
+}
+
+/* Chart series keep their semantic colors and dash patterns. */
+html[data-ui="classic"] .workspace .graph-panel {
+  background: var(--skin-surface);
+  border-color: var(--skin-border);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px #25344909;
+}
+html[data-ui="classic"] .graph-stage { background: var(--skin-surface); }
+html[data-ui="classic"] .graph-panel .panel-heading {
+  background: #f6f8fb;
+  border-color: var(--skin-divider);
+}
+html[data-ui="classic"] .graph-panel .text-button { color: var(--skin-accent); }
+html[data-ui="classic"] .graph-legend {
+  color: var(--skin-muted);
+}
+html[data-ui="classic"] .graph-panel .panel-foot {
+  color: var(--skin-muted);
+  background: var(--skin-surface-soft);
+  border-color: var(--skin-divider);
+}
+html[data-ui="classic"] .chart-grid text,
+html[data-ui="classic"] .chart text { fill: #53647b; }
+html[data-ui="classic"] .chart-grid line { stroke: #e5eaf2; }
+html[data-ui="classic"] .chart-axis { stroke: #8294ad; }
+html[data-ui="classic"] .radio-card span { color: var(--skin-ink); }
+html[data-ui="classic"] .radio-card:hover,
+html[data-ui="classic"] .check-grid label:hover { background: var(--skin-accent-soft); border-radius: 3px; }
+
+html[data-ui="classic"] .classic-neuron-function-plot { background: var(--skin-surface); }
+html[data-ui="classic"] .classic-neuron-function-plot [stroke="red"],
+html[data-ui="classic"] .classic-neuron-function-plot [stroke="#ff0000"],
+html[data-ui="classic"] .classic-neuron-function-plot [stroke="#f00"] { stroke: var(--skin-accent); }
+html[data-ui="classic"] .classic-neuron-readout dt { color: var(--skin-muted); }
+html[data-ui="classic"] .classic-neuron-readout dd { color: var(--skin-ink); }
+
+/* The optional lab dialog and help follow the same compact window treatment. */
+html[data-ui="classic"] .lab-card.lab-red,
+html[data-ui="classic"] .lab-card.lab-green,
+html[data-ui="classic"] .lab-card.lab-blue { border-top-color: transparent; }
+html[data-ui="classic"] .lab-card h4,
+html[data-ui="classic"] .lab-card > p { color: var(--skin-ink); }
+html[data-ui="classic"] .lab-number { color: var(--skin-accent); }
+html[data-ui="classic"] .lab-card footer { color: var(--skin-muted); border-color: var(--skin-divider); }
+html[data-ui="classic"] .lab-variant-wide { color: var(--skin-muted); }
+html[data-ui="classic"] .modal-backdrop { background: #20334c47; }
+html[data-ui="classic"] .help-modal > header {
+  color: #264f81;
+  background: #e3ecf9;
+  box-shadow: inset 0 -1px 0 #c5d5eb;
+}
+html[data-ui="classic"] .help-modal > header h2 { color: #264f81; }
+html[data-ui="classic"] .help-modal .help-body { background: var(--skin-surface-soft); }
+html[data-ui="classic"] .help-modal .help-body section {
+  color: var(--skin-ink);
+  background: var(--skin-surface);
+  border-color: var(--skin-divider);
+  border-radius: 4px;
+}
+html[data-ui="classic"] .help-modal .icon-button { color: var(--skin-muted); background: transparent; border-radius: 3px; }
+html[data-ui="classic"] .help-modal .icon-button:hover { color: #9f3e48; background: #f8e2e5; }
+
+html[data-ui="classic"] .toast {
+  color: var(--skin-muted);
+  background: #f5f7fa;
+  border-top-style: solid;
+  border-top-color: #dde5ef;
+}
+
+/* Disabled fields are intentionally readable and never resemble active ones. */
+html[data-ui="classic"] button:disabled,
+html[data-ui="classic"] .classic-run-tool:disabled,
+html[data-ui="classic"] .classic-stop-tool:disabled,
+html[data-ui="classic"] .settings-panel .button:disabled,
+html[data-ui="classic"] .settings-panel .primary-button:disabled,
+html[data-ui="classic"] .settings-panel .text-button:disabled,
+html[data-ui="classic"] .help-modal .button:disabled,
+html[data-ui="classic"] .help-modal .primary-button:disabled {
+  color: #8b97a8;
+  text-shadow: none;
+}
+html[data-ui="classic"] .settings-panel .button:disabled,
+html[data-ui="classic"] .settings-panel .primary-button:disabled,
+html[data-ui="classic"] .settings-panel .text-button:disabled,
+html[data-ui="classic"] .help-modal .button:disabled,
+html[data-ui="classic"] .help-modal .primary-button:disabled {
+  background: #eef2f7;
+  box-shadow: inset 0 0 0 1px #dce3ed;
+}
+html[data-ui="classic"] .settings-panel input:disabled,
+html[data-ui="classic"] .settings-panel select:disabled,
+html[data-ui="classic"] .classic-size-control input:disabled {
+  color: #8793a5;
+  background: #f0f3f7;
+  box-shadow: inset 0 0 0 1px #dfe5ee;
+}
+html[data-ui="classic"] .classic-tool:disabled .classic-tool-icon,
+html[data-ui="classic"] .classic-menu-popup button:disabled .classic-tool-icon { opacity: .45; }
+
+/* Keep native scrollbar widths so usable table and dialog space does not shift. */
+html[data-ui="classic"] ::-webkit-scrollbar-track { background: var(--skin-surface-soft); }
+html[data-ui="classic"] ::-webkit-scrollbar-thumb { background: #b1bdce; border-radius: 8px; }
+html[data-ui="classic"] ::-webkit-scrollbar-thumb:hover { background: #94a5bb; }
+html[data-ui="classic"] ::-webkit-scrollbar-corner { background: var(--skin-surface-soft); }
