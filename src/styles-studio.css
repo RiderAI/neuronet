@@ -1,5 +1,5 @@
-/* Local Studio skin. Load after classic + contemporary; never applies to the
- * published classic page. Field contract: 72x64 tiles, 6px gap, 8px padding;
+/* Studio skin. Load after classic + contemporary.
+ * Field contract: 72x64 tiles, 6px gap, 8px padding;
  * N columns occupy 10 + 78*N pixels, before any native vertical scrollbar. */
 html[data-ui="classic"][data-skin="studio"] {
   --skin-canvas: #e9eff2;
@@ -17,7 +17,10 @@ html[data-ui="classic"][data-skin="studio"] {
   --studio-positive-end: #116874;
   --studio-negative: #99611d;
   --studio-selection: #203d4c;
-  --studio-glass: rgba(249, 253, 255, .55);
+  --studio-glass: rgba(220, 242, 244, .24);
+  --studio-glass-body: rgba(249, 253, 255, .35);
+  --studio-glass-filter: blur(8px) saturate(1.45);
+  --studio-glass-body-filter: blur(14px) saturate(1.15);
   font-size: 12px;
   scrollbar-color: #a8bbc5 #f4f7f9;
 }
@@ -86,8 +89,8 @@ html[data-ui="classic"][data-skin="studio"] .classic-tool-icon [fill="#ffef00"] 
 html[data-ui="classic"][data-skin="studio"] main { padding-bottom: 24px; }
 html[data-ui="classic"][data-skin="studio"] .workspace {
   grid-template-columns: var(--classic-neuron-pane-width, 322px) 10px minmax(0, 1fr);
-  background: radial-gradient(ellipse at 40% 0, #dceeea 0, transparent 60%),
-    radial-gradient(ellipse at 100% 100%, #dce5f0 0, transparent 65%), var(--skin-canvas);
+  background: radial-gradient(ellipse at 40% 0, #c7e8e0 0, transparent 60%),
+    radial-gradient(ellipse at 100% 100%, #cbdcf0 0, transparent 65%), var(--skin-canvas);
 }
 html[data-ui="classic"][data-skin="studio"] .workspace[data-neurons-visible="false"],
 html[data-ui="classic"][data-skin="studio"] .workspace[data-graph-visible="false"] { grid-template-columns: minmax(0, 1fr); }
@@ -191,15 +194,16 @@ html[data-ui="classic"][data-skin="studio"] .neuron-values span:last-child b { f
 html[data-ui="classic"][data-skin="studio"] .classic-input-arrow { top: 11px; left: 32px; right: auto; color: var(--tile-muted); font-size: 0; }
 html[data-ui="classic"][data-skin="studio"] .classic-input-arrow::before { content: "→"; font: 10px/1 "Segoe UI", sans-serif; }
 
-/* Transparent outer frames are essential: an opaque parent would fake glass.
- * Form/readout bodies have their own fully opaque background. */
+/* Frosted chrome, opaque controls. Never use opacity on the window itself:
+ * labels and numbers must retain their full contrast. Each backdrop lives on
+ * its own surface; an opaque wrapper would hide the windows behind it. */
 html[data-ui="classic"][data-skin="studio"] .settings-panel,
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-properties,
 html[data-ui="classic"][data-skin="studio"] .help-modal {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .85);
+  border: 1px solid rgba(255, 255, 255, .72);
   border-radius: 10px;
-  box-shadow: 0 12px 30px -8px #263d4a38, 0 2px 7px #263d4a1a;
+  box-shadow: 0 14px 34px -10px #263d4a45, 0 2px 8px #263d4a1a, inset 0 1px 0 #ffffffb3;
 }
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-properties { display: flex; flex-direction: column; }
 html[data-ui="classic"][data-skin="studio"] .classic-dialog-title,
@@ -211,24 +215,29 @@ html[data-ui="classic"][data-skin="studio"] .help-modal > header {
   height: 34px;
   flex: 0 0 34px;
   padding: 3px 8px 3px 10px;
-  color: #314a55;
-  background: var(--studio-glass);
-  border-bottom: 1px solid rgba(255, 255, 255, .8);
-  box-shadow: none;
-  backdrop-filter: blur(16px) saturate(1.25);
-  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+  color: #0b1c24;
+  background: linear-gradient(180deg, #ffffff38, #ffffff00 75%), var(--studio-glass);
+  border-bottom: 1px solid #86afb74d;
+  box-shadow: inset 0 1px 0 #ffffff99;
+  backdrop-filter: var(--studio-glass-filter);
+  -webkit-backdrop-filter: var(--studio-glass-filter);
 }
 html[data-ui="classic"][data-skin="studio"] .settings-panel[data-classic-active="true"] .classic-dialog-title,
-html[data-ui="classic"][data-skin="studio"] .classic-neuron-properties[data-classic-active="true"] .classic-neuron-window-title { color: #173c48; box-shadow: inset 0 -1px 0 #7bb5b833; }
+html[data-ui="classic"][data-skin="studio"] .classic-neuron-properties[data-classic-active="true"] .classic-neuron-window-title { color: #0b1c24; box-shadow: inset 0 1px 0 #ffffffb3, inset 0 -1px 0 #398e9633; }
 html[data-ui="classic"][data-skin="studio"] .classic-dialog-title strong,
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-window-title strong,
 html[data-ui="classic"][data-skin="studio"] .help-modal > header h2 { color: inherit; font-size: 12px; font-weight: 600; }
 html[data-ui="classic"][data-skin="studio"] .classic-dialog-title button,
-html[data-ui="classic"][data-skin="studio"] .classic-neuron-window-title button { width: 26px; height: 26px; min-height: 26px; border-radius: 5px; font-size: 17px; line-height: 1; }
-html[data-ui="classic"][data-skin="studio"] .settings-panel .tab-runtime-lock,
+html[data-ui="classic"][data-skin="studio"] .classic-neuron-window-title button { width: 26px; height: 26px; min-height: 26px; border-radius: 5px; font-size: 17px; line-height: 1; color: #0b1c24; }
+html[data-ui="classic"][data-skin="studio"] .settings-panel .tab-runtime-lock { background: transparent; }
 html[data-ui="classic"][data-skin="studio"] .settings-panel .tab-content,
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-window-body,
-html[data-ui="classic"][data-skin="studio"] .help-modal .help-body { background: #fff; }
+html[data-ui="classic"][data-skin="studio"] .help-modal .help-body,
+html[data-ui="classic"][data-skin="studio"] .help-modal > footer {
+  background: var(--studio-glass-body);
+  backdrop-filter: var(--studio-glass-body-filter);
+  -webkit-backdrop-filter: var(--studio-glass-body-filter);
+}
 html[data-ui="classic"][data-skin="studio"] .settings-panel .tab-content { padding: 10px; }
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-window-body { flex: 1; padding: 9px 10px 10px; }
 
@@ -346,16 +355,24 @@ html[data-ui="classic"][data-skin="studio"] .studio-output-label { fill: var(--s
 html[data-ui="classic"][data-skin="studio"] .studio-node-value { fill: var(--skin-ink); font: 600 15px "Segoe UI", sans-serif; text-anchor: middle; dominant-baseline: central; }
 html[data-ui="classic"][data-skin="studio"] .studio-node-value.signal { fill: #fff; }
 
-html[data-ui="classic"][data-skin="studio"] .workspace .graph-panel { border-radius: 8px; border-color: #d1dde5; box-shadow: 0 2px 8px #3853670b; }
-html[data-ui="classic"][data-skin="studio"] .graph-panel .panel-heading { min-height: 36px; padding: 6px 9px; background: #f8fafc; }
+html[data-ui="classic"][data-skin="studio"] .workspace .graph-panel { background: transparent; border-radius: 8px; border-color: #ffffffb8; box-shadow: 0 2px 8px #3853670b; }
+html[data-ui="classic"][data-skin="studio"] .graph-panel .panel-heading {
+  min-height: 36px;
+  padding: 6px 9px;
+  background: linear-gradient(180deg, #ffffff38, #ffffff00 75%), var(--studio-glass);
+  border-color: #86afb74d;
+  box-shadow: inset 0 1px 0 #ffffff99;
+  backdrop-filter: var(--studio-glass-filter);
+  -webkit-backdrop-filter: var(--studio-glass-filter);
+}
 html[data-ui="classic"][data-skin="studio"] .graph-legend { color: var(--skin-muted); background: transparent; font-size: 12px; }
 html[data-ui="classic"][data-skin="studio"] .graph-panel .text-button { min-height: 26px; border-radius: 4px; }
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-close { min-height: 28px; height: 28px; border-radius: 5px; }
 html[data-ui="classic"][data-skin="studio"] .classic-neuron-readout dl { font-size: 11px; row-gap: 5px; }
-html[data-ui="classic"][data-skin="studio"] .help-modal .icon-button { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border-radius: 5px; }
+html[data-ui="classic"][data-skin="studio"] .help-modal .icon-button { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border-radius: 5px; color: #0b1c24; }
 html[data-ui="classic"][data-skin="studio"] .help-modal .help-body { padding: 12px; gap: 10px; }
 html[data-ui="classic"][data-skin="studio"] .help-modal .help-body section { border-radius: 7px; }
-html[data-ui="classic"][data-skin="studio"] .help-modal > footer { padding: 10px 12px; background: #f5f8fa; }
+html[data-ui="classic"][data-skin="studio"] .help-modal > footer { padding: 10px 12px; }
 html[data-ui="classic"][data-skin="studio"] .toast { height: 24px; min-height: 24px; padding: 4px 8px; font-size: 11px; background: #fff; border-top: 1px solid #d8e3e9; }
 
 /* Keep the existing small-screen stacking and access to every command. */
@@ -372,4 +389,20 @@ html[data-ui="classic"][data-skin="studio"] .toast { height: 24px; min-height: 2
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-ui="classic"][data-skin="studio"] .neuron-card { transition: none; }
+}
+
+/* Solid fallback when blur is unavailable or transparency is unwelcome. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-ui="classic"][data-skin="studio"] {
+    --studio-glass: #e1f1f2;
+    --studio-glass-body: #f8fbfc;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-ui="classic"][data-skin="studio"] {
+    --studio-glass: #e1f1f2;
+    --studio-glass-body: #f8fbfc;
+    --studio-glass-filter: none;
+    --studio-glass-body-filter: none;
+  }
 }
