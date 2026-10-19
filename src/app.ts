@@ -2,7 +2,6 @@ import {
   MAX_NEURONS,
   MAX_TRAINING_EXAMPLES,
   MIN_NEURONS,
-  applyActivation,
   configurePerceptron,
   createNetwork,
   deserializeState,
@@ -17,6 +16,7 @@ import {
   trainEpoch,
   trainingExamplesIssue,
   trainingSupportIssue,
+  zeroInputs,
 } from "./engine";
 import {
   LAB1_VARIANTS,
@@ -34,6 +34,7 @@ import type {
 } from "./types";
 import "./styles.css";
 import { renderStudioTopology, syncStudioTopologies } from "./studio-topology";
+import { renderActivationPlot } from "./activation-plot";
 import {
   STUDIO_COLUMN_PITCH,
   STUDIO_SPLITTER_WIDTH,
@@ -226,8 +227,8 @@ const ACTIVATION_LABELS: Record<ActivationKind, string> = {
 };
 
 const INPUT_LABELS: Record<InputKind, string> = {
-  constant: "Const",
-  harmonic: "Variable: A·cos(ωt+φ)",
+  constant: "Константа",
+  harmonic: "Переменная: A·cos(ωt+φ)",
 };
 
 function escapeHtml(value: unknown): string {
@@ -407,7 +408,7 @@ function renderClassicHeader(): string {
           <button data-action="step" ${running ? "disabled" : ""}><span>${classicToolbarIcon("step")}</span>Один шаг</button>
           <button data-action="stop" ${!running ? "disabled" : ""}><span>${classicToolbarIcon("stop")}</span>Остановить</button>
           <hr />
-          <button data-action="zero-inputs" ${running ? "disabled" : ""}><span>0</span>Обнулить входы</button>
+          <button data-action="zero-inputs"><span>0</span>Обнулить входы</button>
         </div></details>
         <details class="classic-menu" name="classic-main-menu"><summary>Вид</summary><div class="classic-menu-popup">
           ${viewItem("toolbar", "Панель инструментов")}
@@ -415,8 +416,8 @@ function renderClassicHeader(): string {
           <hr />
           ${viewItem("neurons", "Нейронное поле")}
           ${panelItem("weights", "Матрица связей")}
-          ${panelItem("neurons", "Порог и активационная ф-ция")}
-          ${panelItem("vectors", "Вх. и вых. векторы")}
+          ${panelItem("neurons", "Порог и активационная функция")}
+          ${panelItem("vectors", "Входные и выходные векторы")}
           ${viewItem("graph", "График")}
           ${panelItem("graph", "Свойства графика")}
           ${panelItem("perceptron", "Перцептрон и обучение")}
@@ -445,7 +446,7 @@ function renderClassicHeader(): string {
         <button class="classic-tool classic-run-tool" data-action="run" title="${runtimeMode === "running" ? "Пауза" : "Пуск"}" aria-label="${runtimeMode === "running" ? "Пауза" : "Пуск"}" ${runtimeMode === "training" ? "disabled" : ""}>${classicToolbarIcon(runtimeMode === "running" ? "pause" : "run")}</button>
         <button class="classic-tool" data-action="step" title="Один шаг" aria-label="Один шаг" ${running ? "disabled" : ""}>${classicToolbarIcon("step")}</button>
         <button class="classic-tool classic-stop-tool" data-action="stop" title="Остановить" aria-label="Остановить" ${!running ? "disabled" : ""}>${classicToolbarIcon("stop")}</button>
-        <button class="classic-tool classic-zero-tool" data-action="zero-inputs" title="Обнулить входы" aria-label="Обнулить входы" ${running ? "disabled" : ""}>0</button>
+        <button class="classic-tool classic-zero-tool" data-action="zero-inputs" title="Обнулить входы" aria-label="Обнулить входы">0</button>
         <button class="classic-tool" data-action="help" title="Справка" aria-label="Справка">${classicToolbarIcon("help")}</button>
         <i class="classic-separator" aria-hidden="true"></i>
         <div class="classic-size-control">
@@ -498,7 +499,7 @@ function renderHeader(): string {
         <button class="button" data-action="step" ${running ? "disabled" : ""}>Шаг</button>
         <button class="button" data-action="stop" ${!running ? "disabled" : ""}>Стоп</button>
         <button class="button" data-action="reset-runtime" ${running ? "disabled" : ""}>Сброс вычисления</button>
-        <button class="button" data-action="zero-inputs" ${running ? "disabled" : ""}>Обнулить входы</button>
+        <button class="button" data-action="zero-inputs">Обнулить входы</button>
       </div>
       <div class="size-control">
         <label for="network-size">Нейронов</label>
@@ -738,25 +739,7 @@ function removeClassicWindowFromStack(key: ClassicWindowKey): void {
 }
 
 function renderClassicActivationPlot(index: number): string {
-  const neuron = state.neurons[index]!;
-  const points = Array.from({ length: 65 }, (_, pointIndex) => {
-    const argument = -1.6 + (pointIndex / 64) * 3.2;
-    const output = applyActivation(
-      neuron.activation,
-      argument + neuron.threshold,
-      neuron.threshold,
-      neuron.linear,
-    );
-    const x = 8 + (pointIndex / 64) * 134;
-    const y = 76 - Math.max(-1.55, Math.min(1.55, output)) * 38;
-    return `${pointIndex === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-  }).join(" ");
-
-  return `<svg viewBox="0 0 150 150" role="img" aria-label="График функции активации нейрона ${neuron.id}">
-    <rect x="0.5" y="0.5" width="149" height="149" fill="#fff" stroke="#b8b8b8" />
-    <path d="M8 76 H142 M76 8 V142" fill="none" stroke="#000" stroke-width="1" shape-rendering="crispEdges" />
-    <path d="${points}" fill="none" stroke="#f00" stroke-width="1.25" />
-  </svg>`;
+  return renderActivationPlot(state.neurons[index]!);
 }
 
 function renderClassicNeuronWindows(): string {
@@ -782,13 +765,13 @@ function renderClassicNeuronWindows(): string {
           <div class="classic-neuron-function-plot">${renderClassicActivationPlot(index)}</div>
         </section>
         <section class="classic-neuron-readout">
-          <button class="classic-neuron-close" data-action="classic-close-neuron" data-index="${index}">Close</button>
+          <button class="classic-neuron-close" data-action="classic-close-neuron" data-index="${index}">Закрыть</button>
           <dl>
             <dt>Порядковый номер</dt><dd>${neuron.id}</dd>
             <dt>Статус</dt><dd>${role}</dd>
             <dt>Порог :</dt><dd>${fmt(neuron.threshold)}</dd>
             <dt title="Суммарный сигнал до вычитания порога: P = Σw·z">Входное воздействие P :</dt><dd data-classic-live="input-impact">${fmt(inputImpact)}</dd>
-            <dt>Тип активационной ф-ции :</dt><dd>${activation}</dd>
+            <dt>Функция активации:</dt><dd>${activation}</dd>
             <dt>Выходное значение :</dt><dd data-classic-live="output">${fmt(neuron.output)}</dd>
             <dt>Время</dt><dd data-classic-live="time">${fmt(state.time)}</dd>
           </dl>
@@ -1288,7 +1271,7 @@ function renderLabs(): string {
         <footer>По умолчанию — 16 нейронов свободной сети, как в старом NeuroNet.</footer>
       </article>
     </div>
-    <div class="math-contract"><div><strong>Функции активации</strong><span>P ≤ Q → z = 0; выше порога NET = P − Q</span></div><code>Знаковая: 1; линейная: k·NET+b; сигмоидальная: 1/(1+e<sup>−NET</sup>)</code><button class="text-button" data-action="help">Справка</button></div>`;
+    <div class="math-contract"><div><strong>Функции активации</strong><span>Знаковая и линейная: при P ≤ Q выход z = 0</span></div><code>При P &gt; Q: знаковая — 1; линейная — k·(P−Q)+b. Сигмоидальная при любом P: 1/(1+e<sup>−(P−Q)</sup>)</code><button class="text-button" data-action="help">Справка</button></div>`;
 }
 
 function renderActiveTab(tab: Tab = activeTab): string {
@@ -1303,9 +1286,9 @@ function renderActiveTab(tab: Tab = activeTab): string {
 function classicDialogCaption(tab: Tab): string {
   const captions: Record<Tab, string> = {
     labs: "Лабораторные работы",
-    neurons: "Порог и активационная ф-ция",
+    neurons: "Порог и активационная функция",
     weights: "Матрица связей",
-    vectors: "Входные и выходные вектора",
+    vectors: "Входные и выходные векторы",
     perceptron: "Перцептрон",
     graph: "Свойства графика",
   };
@@ -1330,7 +1313,7 @@ function updateRuntimeLocks(): void {
     // Rearranging the Studio grid never edits signals or training parameters.
     if (studioMode && element.matches("[data-pattern-resize]")) return;
     if (runtimeMode === "running" && element.matches('[data-neuron-field], [data-vector-input], [data-weight], [data-pattern-string], [data-pattern-resize], [data-perceptron-field], [data-desired], [data-action="toggle-bit"]')) return;
-    if (!element.matches('[data-context-help], [data-action="stop"], [data-action="select-neuron"], [data-action="tab"]')) element.disabled = true;
+    if (!element.matches('[data-context-help], [data-action="stop"], [data-action="zero-inputs"], [data-action="select-neuron"], [data-action="tab"]')) element.disabled = true;
   });
 }
 
@@ -2056,9 +2039,10 @@ app.addEventListener("click", (event) => {
   } else if (action === "reset-runtime") {
     replaceWith(resetRuntime(state), "Вычисленные значения, время и график сброшены.");
   } else if (action === "zero-inputs") {
-    state.neurons.forEach(neuron => { if (neuron.role === "input") neuron.constantInput = 0; });
+    stopAll();
+    state = zeroInputs(state);
     parametersChanged();
-    setToast("Постоянные входы обнулены. Изменения применятся на следующем шаге; время и график сохранены.");
+    setToast("Входы, выходы, время и график обнулены. Схема, веса и параметры сохранены.");
     render();
   } else if (action === "new-project") {
     if (confirmReplace("Очистить текущий проект и создать пустую сеть?")) {

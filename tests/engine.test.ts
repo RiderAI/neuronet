@@ -19,6 +19,7 @@ import {
   trainingSupportIssue,
   trainingExamplesIssue,
   validateState,
+  zeroInputs,
 } from "../src/engine";
 import {
   lab1SingleNeuronPreset,
@@ -139,8 +140,8 @@ describe("начальные параметры гармонического в�
 });
 
 describe("функции активации", () => {
-  it("применяет подтверждённую EXE строгую отсечку до всех функций активации", () => {
-    for (const kind of ["hard-limit", "linear", "sigmoid"] as const) {
+  it("сохраняет строгую отсечку у знаковой и линейной функций", () => {
+    for (const kind of ["hard-limit", "linear"] as const) {
       expect(applyActivation(kind, 0.5, 0.5, { slope: 2, intercept: 10 })).toBe(0);
       expect(applyActivation(kind, 0.49, 0.5, { slope: 2, intercept: 10 })).toBe(0);
     }
@@ -156,11 +157,71 @@ describe("функции активации", () => {
     expect(applyActivation("linear", 2, 0.5, { slope: -2, intercept: 1 })).toBe(-2);
   });
 
-  it("использует подтверждённую EXE логистику 1/(1+exp(-NET)) после отсечки", () => {
-    expect(applyActivation("sigmoid", 0, 0.5)).toBe(0);
-    expect(applyActivation("sigmoid", 0.5, 0.5)).toBe(0);
+  it("использует полную логистику 1/(1+exp(-(P-Q))) без отсечки", () => {
+    expect(applyActivation("sigmoid", 0, 0.5)).toBeCloseTo(0.377540669, 9);
+    expect(applyActivation("sigmoid", 0.5, 0.5)).toBe(0.5);
     expect(applyActivation("sigmoid", 1, 0.5)).toBeCloseTo(0.622459331, 9);
     expect(applyActivation("sigmoid", 1.5, 0.5)).toBeCloseTo(0.731058579, 9);
+  });
+
+  it.each([-5, -.4, 0, .4, 5])("сдвигает непрерывную сигмоиду порогом Q=%s", threshold => {
+    expect(applyActivation("sigmoid", threshold, threshold)).toBe(.5);
+    for (const offset of [-8, -2, -1, -.001, .001, 1, 2, 8]) {
+      const actual = applyActivation("sigmoid", threshold + offset, threshold);
+      expect(actual).toBeCloseTo(1 / (1 + Math.exp(-offset)), 14);
+      expect(actual).toBeGreaterThan(0);
+      expect(actual).toBeLessThan(1);
+      expect(actual + applyActivation("sigmoid", threshold - offset, threshold)).toBeCloseTo(1, 14);
+    }
+  });
+
+  it("не создаёт NaN/Infinity для крайних конечных входов сигмоиды", () => {
+    for (const potential of [-Number.MAX_VALUE, -1000, 1000, Number.MAX_VALUE]) {
+      for (const threshold of [-Number.MAX_VALUE, 0, Number.MAX_VALUE]) {
+        const actual = applyActivation("sigmoid", potential, threshold);
+        expect(Number.isFinite(actual)).toBe(true);
+        expect(actual).toBeGreaterThanOrEqual(0);
+        expect(actual).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
+describe("обнуление входов начинает новый опыт, не меняя схему", () => {
+  it.each(["scatter", "perceptron"] as const)("сохраняет параметры и веса модели %s", model => {
+    let state = model === "scatter" ? createNetwork(3) : configurePerceptron(createNetwork(), 2, 1);
+    state.neurons[0]!.role = "input";
+    state.neurons[0]!.activation = "sigmoid";
+    state.neurons[0]!.threshold = -.4;
+    state.neurons[0]!.inputKind = "harmonic";
+    state.neurons[0]!.harmonic = { amplitude: 2, omega: .7, phase: -.3, deltaTime: .125 };
+    state.neurons[0]!.constantInput = 2;
+    state.neurons[1]!.role = "input";
+    state.neurons[1]!.constantInput = 3;
+    state.neurons[2]!.role = "output";
+    state.neurons[2]!.activation = "sigmoid";
+    state.neurons[2]!.threshold = .6;
+    state.weights[0]![2] = -1.25;
+    state.weights[1]![2] = .75;
+    for (let i = 0; i < 4; i++) state = runStep(state).state;
+    state.perceptron.trainingExamples = [{ name: "Сохранённый образ", inputs: [1, 0], desired: [1] }];
+    const before = structuredClone(state);
+    const result = zeroInputs(state);
+    expect(result.step).toBe(0);
+    expect(result.time).toBe(0);
+    expect(result.history).toEqual([]);
+    expect(result.weights).toEqual(before.weights);
+    expect(result.graph).toEqual(before.graph);
+    expect(result.model).toBe(before.model);
+    expect(result.perceptron.trainingExamples).toEqual(before.perceptron.trainingExamples);
+    expect(result.neurons).toEqual(before.neurons.map(neuron => ({ ...neuron, potential: 0, output: 0, constantInput: neuron.role === "input" ? 0 : neuron.constantInput })));
+    expect(state).toEqual(before);
+    const next = runStep(result).state;
+    expect(next.step).toBe(1);
+    expect(next.neurons[0]!.potential).toBeCloseTo(2 * Math.cos(.7 * .125 - .3), 14);
+    expect(next.neurons[1]!.potential).toBe(0);
+    expect(next.neurons[0]!.output).toBeGreaterThan(0);
+    expect(next.history).toHaveLength(1);
   });
 });
 

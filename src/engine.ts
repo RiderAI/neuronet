@@ -239,14 +239,14 @@ export function applyActivation(
   linear: Neuron["linear"] = { slope: 1, intercept: 0 },
 ): number {
   const argument = finite(potential) - finite(threshold);
-  // The legacy routine at PE address 0x407AF0 applies the strict threshold
-  // gate before choosing the activation, including linear and sigmoid.
-  if (argument <= 0) return 0;
-  if (kind === "hard-limit") return 1;
+  // The sigmoid is continuous over the whole input range; Q shifts its centre.
   if (kind === "sigmoid") {
     const exponent = clamp(-argument, -700, 700);
     return 1 / (1 + Math.exp(exponent));
   }
+  // Preserve the strict threshold gate for the hard-limit and linear functions.
+  if (argument <= 0) return 0;
+  if (kind === "hard-limit") return 1;
   return finite(linear.slope, 1) * argument + finite(linear.intercept);
 }
 
