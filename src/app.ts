@@ -33,6 +33,15 @@ import type {
   NeuronRole,
 } from "./types";
 import "./styles.css";
+import { renderStudioTopology, syncStudioTopologies } from "./studio-topology";
+import {
+  STUDIO_COLUMN_PITCH,
+  STUDIO_SPLITTER_WIDTH,
+  studioColumns,
+  studioColumnsThatFit,
+  studioPaneWidth,
+  studioPatternColumns,
+} from "./studio-layout";
 
 type Tab = "neurons" | "weights" | "vectors" | "perceptron" | "graph" | "labs";
 type RuntimeMode = "stopped" | "running" | "training";
@@ -82,6 +91,7 @@ const appElement = document.querySelector<HTMLDivElement>("#app");
 if (!appElement) throw new Error("Не найден контейнер приложения");
 const app: HTMLDivElement = appElement;
 const classicMode = document.documentElement.dataset.ui === "classic";
+const studioMode = document.documentElement.dataset.skin === "studio";
 
 let state = createNetwork();
 let selectedNeuron = 0;
@@ -93,8 +103,9 @@ let classicWindowStack: ClassicWindowKey[] = [];
 let classicDragState: ClassicDragState | null = null;
 let classicSplitterDragState: ClassicSplitterDragState | null = null;
 let patternResizeState: PatternResizeState | null = null;
-let classicNeuronFieldPreferredWidth = CLASSIC_NEURON_FIELD_DEFAULT_WIDTH;
-let classicNeuronFieldWidth = CLASSIC_NEURON_FIELD_DEFAULT_WIDTH;
+let classicNeuronFieldPreferredWidth = studioMode ? studioPaneWidth(4) : CLASSIC_NEURON_FIELD_DEFAULT_WIDTH;
+let classicNeuronFieldWidth = classicNeuronFieldPreferredWidth;
+let studioVisibleColumns = 4;
 let runtimeMode: RuntimeMode = "stopped";
 let runTimer: number | undefined;
 let trainingTimer: number | undefined;
@@ -106,6 +117,8 @@ let examplesEpochs = 0;
 let exampleNameDraft = "";
 let trainingTarget: "current" | "examples" = "current";
 let helpOpen = false;
+// Session-only UI mode: never serialize it into a project or browser storage.
+let teacherMode = false;
 let helpReturnFocus: FocusDescriptor | null = null;
 let toast = "Готово.";
 let toastTone: "info" | "success" | "warning" = "info";
@@ -378,7 +391,7 @@ function renderClassicHeader(): string {
     <header class="classic-shell-header">
       <div class="classic-titlebar">
         <span class="classic-app-mark" aria-hidden="true"><i></i><b></b><em></em></span>
-        <strong>NeuroNet</strong>
+        <strong>NeuroNet Online</strong>
         ${renderFullscreenControl()}
       </div>
       <nav class="classic-menubar" aria-label="Главное меню">
@@ -407,6 +420,7 @@ function renderClassicHeader(): string {
           ${viewItem("graph", "График")}
           ${panelItem("graph", "Свойства графика")}
           ${panelItem("perceptron", "Перцептрон и обучение")}
+          ${teacherMode ? panelItem("labs", "Сценарии преподавателя") : ""}
         </div></details>
         <details class="classic-menu" name="classic-main-menu"><summary>Модели</summary><div class="classic-menu-popup">
           <button data-action="switch-model" data-model="scatter"><span>${modelCheck("scatter")}</span>Россыпь</button>
@@ -459,7 +473,7 @@ function renderHeader(): string {
         <div class="brand-mark" aria-hidden="true"><span></span><i></i><b></b></div>
         <div>
           <p class="eyebrow">Учебная лаборатория</p>
-          <h1>NeuroNet <em>Web</em></h1>
+          <h1>NeuroNet <em>Online</em></h1>
         </div>
       </div>
       <nav class="header-actions" aria-label="Работа с проектом">
@@ -501,7 +515,7 @@ function renderHeader(): string {
 }
 
 function renderNeuronField(): string {
-  const columns = Math.ceil(Math.sqrt(state.neurons.length));
+  const columns = studioMode ? Math.min(studioVisibleColumns, state.neurons.length) : Math.ceil(Math.sqrt(state.neurons.length));
   const cards = state.neurons
     .map((neuron, index) => {
       const signalClass = neuron.output > 1e-9 ? "excited" : neuron.output < -1e-9 ? "negative" : "resting";
@@ -509,11 +523,11 @@ function renderNeuronField(): string {
         <button class="neuron-card ${signalClass} ${selectedNeuron === index ? "selected" : ""}"
           data-action="select-neuron" data-neuron-origin="field" data-index="${index}" aria-label="Нейрон ${neuron.id}, ${ROLE_LABELS[neuron.role]}">
           <span class="neuron-card-head">
-            <strong>${classicMode ? neuron.id : `H${neuron.id}`}</strong>
+            <strong>${classicMode && !studioMode ? neuron.id : `H${neuron.id}`}</strong>
             <small class="role role-${neuron.role}">${ROLE_SHORT[neuron.role]}</small>
           </span>
           <span class="neuron-glyph" aria-hidden="true"><i></i><b></b></span>
-          <span class="neuron-values"><span>P${classicMode ? " = " : " "}<b>${fmt(neuron.potential)}</b></span><span>${classicMode ? "Z" : "z"}${classicMode ? " = " : " "}<b>${fmt(neuron.output)}</b></span></span>
+          <span class="neuron-values"><span>P${classicMode ? " = " : " "}<b>${fmt(neuron.potential)}</b></span><span>${classicMode && !studioMode ? "Z" : "z"}${classicMode ? " = " : " "}<b>${fmt(neuron.output)}</b></span></span>
           ${classicMode && neuron.role === "input" ? '<span class="classic-input-arrow" aria-hidden="true">&lt;--</span>' : ""}
         </button>`;
     })
@@ -525,7 +539,7 @@ function renderNeuronField(): string {
         <div><p class="section-kicker">Состояние сети</p><h2>Нейронное поле</h2></div>
         <span class="legend-note"><i class="signal-swatch"></i> z &gt; 0</span>
       </header>
-      <div class="neuron-grid" style="--neuron-columns:${columns}">${cards}</div>
+      <div class="neuron-grid" style="--neuron-columns:${columns};--studio-field-columns:${columns}">${cards}</div>
       <footer class="panel-foot">Нажмите нейрон, чтобы открыть его параметры. P — потенциал до порога, z — выход.</footer>
     </article>`;
 }
@@ -533,6 +547,11 @@ function renderNeuronField(): string {
 function classicNeuronFieldBounds(): { min: number; max: number } {
   const workspaceWidth = app.querySelector<HTMLElement>(".workspace")?.getBoundingClientRect().width
     ?? window.innerWidth;
+  if (studioMode) {
+    const reserve = window.innerWidth <= 820 || !classicView.graph ? 0 : CLASSIC_GRAPH_MIN_WIDTH + STUDIO_SPLITTER_WIDTH;
+    const minimum = studioPaneWidth(1);
+    return { min: minimum, max: Math.max(minimum, Math.min(studioPaneWidth(state.neurons.length, studioFieldScrollbar()), workspaceWidth - reserve)) };
+  }
   const contentMaximum = CLASSIC_NEURON_CARD_WIDTH * Math.min(MAX_NEURONS, state.neurons.length) + 2;
   const layoutMaximum = workspaceWidth - CLASSIC_GRAPH_MIN_WIDTH - CLASSIC_SPLITTER_WIDTH;
   return {
@@ -552,6 +571,14 @@ function renderClassicWorkspaceSplitter(): string {
 
 function setClassicNeuronFieldWidth(width: number, remember = true): void {
   if (!classicMode) return;
+  if (studioMode) {
+    if (remember) {
+      const bounds = classicNeuronFieldBounds();
+      rememberStudioColumns(studioColumnsThatFit(Math.max(bounds.min, Math.min(bounds.max, width)), studioFieldScrollbar()));
+    }
+    syncStudioLayout();
+    return;
+  }
   const bounds = classicNeuronFieldBounds();
   classicNeuronFieldWidth = Math.round(Math.max(bounds.min, Math.min(bounds.max, width)));
   if (remember) classicNeuronFieldPreferredWidth = classicNeuronFieldWidth;
@@ -566,12 +593,69 @@ function setClassicNeuronFieldWidth(width: number, remember = true): void {
   }
 }
 
+function studioPreferredColumns(): number {
+  return studioColumns(state.layout?.neuronColumns ?? state.perceptron.patternColumns ?? 4);
+}
+
+function studioFieldScrollbar(): number {
+  const panel = app.querySelector<HTMLElement>(".neuron-panel");
+  return panel ? Math.max(0, panel.offsetWidth - panel.clientWidth) : 0;
+}
+
+function rememberStudioColumns(columns: number): void {
+  const preferred = studioColumns(columns);
+  state.layout = { neuronColumns: preferred };
+  state.perceptron.patternColumns = studioPatternColumns(preferred, state.perceptron.inputs);
+}
+
+function prepareStudioLayout(): void {
+  if (!studioMode) return;
+  if (!state.layout) rememberStudioColumns(studioPreferredColumns());
+  state.perceptron.patternColumns = studioPatternColumns(studioPreferredColumns(), state.perceptron.inputs);
+  const maximum = classicNeuronFieldBounds().max;
+  studioVisibleColumns = Math.min(studioPreferredColumns(), state.neurons.length, studioColumnsThatFit(maximum, studioFieldScrollbar()));
+}
+
+/** Layout-only updates: never replace editors, mutate signals, or clear history. */
+function syncStudioLayout(): void {
+  if (!studioMode || !classicMode) return;
+  if (!state.layout) rememberStudioColumns(studioPreferredColumns());
+  const preferred = studioPreferredColumns();
+  const desired = Math.min(preferred, state.neurons.length);
+  const workspace = app.querySelector<HTMLElement>(".workspace");
+  const panel = workspace?.querySelector<HTMLElement>(".neuron-panel");
+  const grid = panel?.querySelector<HTMLElement>(".neuron-grid");
+  const bounds = classicNeuronFieldBounds();
+  let visible = desired;
+  // Changing rows can introduce a vertical scrollbar. Measure actual client
+  // width and compensate its gutter rather than silently losing a column.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    classicNeuronFieldPreferredWidth = studioPaneWidth(desired, studioFieldScrollbar());
+    classicNeuronFieldWidth = Math.round(Math.max(bounds.min, Math.min(bounds.max, classicNeuronFieldPreferredWidth)));
+    workspace?.style.setProperty("--classic-neuron-pane-width", `${classicNeuronFieldWidth}px`);
+    grid?.style.setProperty("--studio-field-columns", String(visible));
+    grid?.style.setProperty("--neuron-columns", String(visible));
+    const available = panel && panel.clientWidth > 0 ? panel.clientWidth : classicNeuronFieldWidth - studioFieldScrollbar();
+    visible = Math.min(desired, studioColumnsThatFit(available));
+  }
+  studioVisibleColumns = visible;
+  grid?.style.setProperty("--studio-field-columns", String(visible));
+  grid?.style.setProperty("--neuron-columns", String(visible));
+  const splitter = workspace?.querySelector<HTMLElement>(".classic-workspace-splitter");
+  splitter?.setAttribute("aria-valuemin", String(bounds.min));
+  splitter?.setAttribute("aria-valuemax", String(Math.round(bounds.max)));
+  splitter?.setAttribute("aria-valuenow", String(classicNeuronFieldWidth));
+  splitter?.setAttribute("aria-valuetext", `${visible} столбцов нейронов`);
+  updatePatternLayout(studioPatternColumns(visible, state.perceptron.inputs));
+}
+
 function classicNeuronWindowKey(index: number): ClassicWindowKey {
   return `neuron:${index}`;
 }
 
 function reconcileClassicWindowState(): void {
   if (!classicMode) return;
+  if (!teacherMode) classicPanels.delete("labs");
   if (state.model !== "perceptron") classicPanels.delete("perceptron");
   classicNeuronWindows = classicNeuronWindows.filter(({ index }) => Boolean(state.neurons[index]));
   const visibleKeys: ClassicWindowKey[] = classicNeuronWindows.map(({ index }) => classicNeuronWindowKey(index));
@@ -615,7 +699,7 @@ function defaultClassicNeuronWindowPosition(order: number): ClassicPosition {
   const maxX = Math.max(4, window.innerWidth - 470);
   const maxY = Math.max(74, window.innerHeight - 261);
   return {
-    x: Math.max(4, Math.min(maxX, 312 + stack * 22)),
+    x: Math.max(4, Math.min(maxX, (studioMode && window.innerWidth > 820 ? classicNeuronFieldWidth + STUDIO_SPLITTER_WIDTH + 12 : 312) + stack * 22)),
     y: Math.max(74, Math.min(maxY, 90 + slot * 244 + stack * 22)),
   };
 }
@@ -631,10 +715,15 @@ function openClassicNeuronWindow(index: number): void {
 
 function openClassicSettings(tab: Tab = activeTab): void {
   if (!classicMode) { activeTab = tab; return; }
+  if (tab === "labs" && !teacherMode) return;
   if (tab === "perceptron" && state.model !== "perceptron") return;
   if (!classicPanels.has(tab)) {
     const offset = classicPanels.size * 24;
-    classicPanels.set(tab, { x: Math.min(330 + offset, window.innerWidth * 0.22), y: 90 + offset });
+    // Leave the field's resize grip visible when the viewport has enough room.
+    const x = studioMode && window.innerWidth > 820
+      ? classicNeuronFieldWidth + STUDIO_SPLITTER_WIDTH + 12 + offset
+      : Math.min(330 + offset, window.innerWidth * 0.22);
+    classicPanels.set(tab, { x, y: 90 + offset });
   }
   bringClassicWindowToFront(`panel:${tab}`);
 }
@@ -866,6 +955,8 @@ function renderTabs(): string {
     ["graph", "Настройки графика"],
   ];
   if (state.model === "perceptron") tabs.splice(3, 0, ["perceptron", "Перцептрон и обучение"]);
+  if (teacherMode) tabs.push(["labs", "Сценарии преподавателя"]);
+  if (activeTab === "labs" && !teacherMode) activeTab = "neurons";
   if (activeTab === "perceptron" && state.model !== "perceptron") activeTab = "neurons";
   return `<nav class="tabs" role="tablist">${tabs
     .map(
@@ -1009,19 +1100,32 @@ function renderVectors(): string {
 
 function patternColumns(): number {
   const count = state.perceptron.inputs;
+  if (studioMode) return studioPatternColumns(studioVisibleColumns, count);
   const square = Math.sqrt(count);
   return state.perceptron.patternColumns ?? (Number.isInteger(square) ? square : Math.min(3, count));
 }
 
 function setPatternColumns(columns: number): void {
   const count = state.perceptron.inputs;
+  if (studioMode) {
+    const maximum = Math.min(count, studioColumnsThatFit(classicNeuronFieldBounds().max, studioFieldScrollbar()));
+    rememberStudioColumns(studioColumns(columns, maximum));
+    syncStudioLayout();
+    return;
+  }
   columns = Math.max(1, Math.min(count, Math.round(columns)));
   // Layout only: retain the bit order, weights, results and training examples.
   state.perceptron.patternColumns = columns;
+  updatePatternLayout(columns);
+}
+
+function updatePatternLayout(columns: number): void {
+  const count = state.perceptron.inputs;
   app.querySelectorAll<HTMLElement>(".pattern-resizer").forEach(editor => {
     editor.style.setProperty("--pattern-columns", String(columns));
     const handle = editor.querySelector<HTMLElement>("[data-pattern-resize]");
     handle?.setAttribute("aria-valuenow", String(columns));
+    if (studioMode) handle?.setAttribute("aria-valuemax", String(Math.min(count, studioColumnsThatFit(classicNeuronFieldBounds().max, studioFieldScrollbar()))));
     handle?.setAttribute("aria-valuetext", `${columns} столбцов, ${Math.ceil(count / columns)} строк`);
   });
   app.querySelectorAll<HTMLElement>("[data-pattern-dimensions]").forEach(label => {
@@ -1062,14 +1166,14 @@ function renderTrainingExamples(): string {
   const issue = trainingExamplesIssue(state);
   const learningIssue = issue ?? trainingSupportIssue(state);
   return `<section class="editor-card training-examples-card">
-    <header><h4>Учебный набор ${contextHelp("Учебный набор", "«Обучить весь набор» по очереди корректирует веса для сохранённых образов и проверяет все ответы. Проходы повторяются до совпадения ответов или ограничения в 500 проходов. Кнопка «Прервать обучение» наверху сохраняет полученные веса. Проверка не меняет веса; не всякий набор можно выучить.")}</h4></header>
+    <header><h4>${studioMode ? "Сохранить набор" : "Учебный набор"} ${contextHelp("Учебный набор", teacherMode ? "«Обучить весь набор» по очереди корректирует веса для сохранённых образов и проверяет все ответы. Проходы повторяются до совпадения ответов или ограничения в 500 проходов. Кнопка «Прервать обучение» наверху сохраняет полученные веса. Проверка не меняет веса; не всякий набор можно выучить." : "Сохраните образы и выбирайте их для обучения по одному. «Проверить весь набор» показывает ответы на сохранённые образы, не меняя веса. Набор сохраняется в файле проекта вместе с параметрами сети.")}</h4></header>
     <div class="example-add-controls"><label>Название образа <input type="text" data-example-name maxlength="80" value="${escapeHtml(exampleNameDraft)}" placeholder="Например, буква А" /></label><button class="button" data-action="example-add">Добавить текущий образ</button></div>
     <div class="training-examples-scroll"><table class="training-examples-table"><thead><tr><th>Образ / входы</th><th>Ожидается</th><th>Получено</th><th>Совпало</th><th>Действия</th></tr></thead><tbody>${examples.map((example, index) => {
       const result = examplesReport?.rows[index];
       return `<tr data-example-index="${index}"><th>${escapeHtml(example.name)}<small>${example.inputs.map(value => fmt(value)).join(" ")}</small></th><td>${example.desired.join(" / ")}</td><td data-example-result>${result ? result.outputs.map(value => fmt(value)).join(" / ") : "—"}</td><td data-example-correct>${result ? result.correct ? "Да" : "Нет" : "—"}</td><td><button class="button" data-action="example-load" data-index="${index}">Выбрать</button><button class="button" data-action="example-remove" data-index="${index}">Удалить</button></td></tr>`;
     }).join("")}</tbody></table></div>
-    <div class="training-controls examples-controls"><button class="button" data-action="examples-check" ${issue ? "disabled" : ""}>Проверить весь набор</button><button class="primary-button" data-action="examples-start" ${learningIssue ? "disabled" : ""}>${runtimeMode === "training" && trainingTarget === "examples" ? "Набор обучается…" : "Обучить весь набор"}</button></div>
-    ${examples.length > 0 && learningIssue ? `<p class="training-problem" role="status">${escapeHtml(learningIssue)}</p>` : ""}
+    <div class="training-controls examples-controls"><button class="button" data-action="examples-check" ${issue ? "disabled" : ""}>Проверить весь набор</button>${teacherMode ? `<button class="primary-button" data-action="examples-start" ${learningIssue ? "disabled" : ""}>${runtimeMode === "training" && trainingTarget === "examples" ? "Набор обучается…" : "Обучить весь набор"}</button>` : ""}</div>
+    ${teacherMode && examples.length > 0 && learningIssue ? `<p class="training-problem" role="status">${escapeHtml(learningIssue)}</p>` : ""}
   </section>`;
 }
 
@@ -1104,10 +1208,10 @@ function renderPerceptron(): string {
     <div class="perceptron-layout">
       <section class="editor-card architecture-card">
         <header><div><p class="section-kicker">Топология</p><h3>Входы → выходы</h3></div>${compatibleLab2() ? '<span class="compat-badge">ЛР2</span>' : ""}</header>
-        <div class="architecture-visual" aria-label="Архитектура перцептрона">
+        ${studioMode ? renderStudioTopology(state) : `<div class="architecture-visual" aria-label="Архитектура перцептрона">
           <div><strong>${p.inputs}</strong><span>входов</span><small>H1…H${p.inputs}</small></div><i>→</i>
           <div><strong>${p.outputs}</strong><span>выходов</span><small>H${inputEnd + 1}…H${outputEnd}</small></div>
-        </div>
+        </div>`}
         <div class="form-grid architecture-form">
           <label>Входов<input id="arch-inputs" type="number" min="1" max="31" value="${p.inputs}" /></label>
           <label>Выходов<input id="arch-outputs" type="number" min="1" max="31" value="${p.outputs}" /></label>
@@ -1160,6 +1264,7 @@ function renderGraphSettings(): string {
 }
 
 function renderLabs(): string {
+  if (!teacherMode) return "";
   const variantOptions = LAB1_VARIANTS.map((_, index) => `<option value="${index + 1}">${index + 1}</option>`).join("");
   const thresholdVariantOptions = LAB1_VARIANTS.map((variant, index) =>
     `<option value="${index + 1}">${index + 1} — Q₂: ${fmt(variant.q21)} / ${fmt(variant.q22)} / ${fmt(variant.q23)}</option>`,
@@ -1222,6 +1327,8 @@ function renderClassicPanels(): string {
 function updateRuntimeLocks(): void {
   if (runtimeMode === "stopped") return;
   app.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(".tab-runtime-lock input, .tab-runtime-lock select, .tab-runtime-lock button").forEach((element) => {
+    // Rearranging the Studio grid never edits signals or training parameters.
+    if (studioMode && element.matches("[data-pattern-resize]")) return;
     if (runtimeMode === "running" && element.matches('[data-neuron-field], [data-vector-input], [data-weight], [data-pattern-string], [data-pattern-resize], [data-perceptron-field], [data-desired], [data-action="toggle-bit"]')) return;
     if (!element.matches('[data-context-help], [data-action="stop"], [data-action="select-neuron"], [data-action="tab"]')) element.disabled = true;
   });
@@ -1257,11 +1364,12 @@ function renderHelp(): string {
   if (!helpOpen) return "";
   return `<div class="modal-backdrop" data-action="close-help">
     <section class="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" data-modal tabindex="-1">
-      <header><h2 id="help-title">Справка NeuroNet</h2><button class="icon-button dark" data-action="close-help" aria-label="Закрыть">×</button></header>
+      <header><h2 id="help-title">Справка NeuroNet Online</h2><button class="icon-button dark" data-action="close-help" aria-label="Закрыть">×</button></header>
       <div class="help-body">
+        ${teacherMode ? '<section class="help-teacher-mode" role="status"><h3>Режим преподавателя</h3><p>Включён до обновления страницы. Чтобы выключить, снова удерживайте Alt и щёлкните заголовок справки.</p></section>' : ""}
         <section><h3>Настройка сети</h3><p>${classicMode ? "В меню «Модели»" : "На панели «Модель»"} выберите «Россыпь» для произвольной схемы или «Перцептрон» для обучения. Максимум — 32 нейрона. ${classicMode ? "Окна параметров и матрицы открываются через меню «Вид»." : "Параметры нейронов и матрица связей доступны на вкладках под графиком."} Строка матрицы — источник, столбец — приёмник.</p></section>
         <section><h3>Расчёт</h3><p>«Шаг» выполняет один расчёт, «Пуск» — непрерывный. P — вход нейрона, z — выход после порога и функции активации. Постоянные входы вводятся прямо в таблице векторов. Изменения действуют со следующего шага, без очистки графика.</p></section>
-        <section><h3>Обучение</h3><p>Задайте образ, начальные веса, цели 0/1 и скорость обучения η. У выходов выберите знаковую функцию. «Одна коррекция» меняет веса для текущего образа. «Обучить образ» и «Обучить весь набор» повторяют коррекции до верного ответа или ограничения числа попыток. Общая кнопка «Прервать обучение» сохраняет полученные веса. После обучения новому символу проверьте предыдущие: их ответы могут измениться.</p></section>
+        <section><h3>Обучение</h3><p>Задайте образ, начальные веса, цели 0/1 и скорость обучения η. У выходов выберите знаковую функцию. «Одна коррекция» меняет веса для текущего образа. «Обучить образ» повторяет коррекции до верного ответа или ограничения числа попыток.${teacherMode ? " «Обучить весь набор» повторяет проходы по сохранённым образам." : ""} «Прервать обучение» сохраняет полученные веса. «Проверить весь набор» проверяет ответы без изменения весов. После обучения новому символу проверьте предыдущие: их ответы могут измениться.</p></section>
         <section><h3>Сохранение</h3><p>«Сохранить» и «Открыть»${classicMode ? " в меню «Файл»" : ""} записывают и загружают параметры, веса и учебный набор. После открытия время и график начинаются заново. Изменение топологии очищает веса и набор после подтверждения.</p></section>
       </div>
       <footer><span>Горячая клавиша: пробел — один шаг (если курсор не находится в поле ввода).</span><button class="primary-button" data-action="close-help">Понятно</button></footer>
@@ -1271,6 +1379,7 @@ function renderHelp(): string {
 
 function render(restorePreviousFocus = true): void {
   clearPendingInputRender();
+  prepareStudioLayout();
   cancelPatternResize();
   if (classicMode) {
     cancelClassicDrag();
@@ -1298,15 +1407,16 @@ function render(restorePreviousFocus = true): void {
       </section>
       ${floatingWindows}
     </main>
-    <footer class="app-footer"><span>NeuroNet Web · автономная учебная версия</span><span>Данные остаются на этом компьютере</span></footer>
+    <footer class="app-footer"><span>NeuroNet Online · учебная программа</span><span>Данные остаются на этом компьютере</span></footer>
     ${renderHelp()}`;
   updateRuntimeLocks();
   restorePanelScroll(previousScroll);
   restoreFocus(previousFocus);
+  if (studioMode) syncStudioTopologies(app, state);
   if (classicMode) {
     window.requestAnimationFrame(() => {
-      if (window.innerWidth > 820) setClassicNeuronFieldWidth(classicNeuronFieldPreferredWidth, false);
       resizeClassicWorkspace();
+      if (studioMode || window.innerWidth > 820) setClassicNeuronFieldWidth(classicNeuronFieldPreferredWidth, false);
       clampClassicWindowPositions();
     });
   }
@@ -1315,7 +1425,10 @@ function render(restorePreviousFocus = true): void {
 function resizeClassicWorkspace(): void {
   if (!classicMode) return;
   const headerHeight = app.querySelector<HTMLElement>(".classic-shell-header")?.getBoundingClientRect().height ?? 72;
-  app.querySelector<HTMLElement>(".workspace")?.style.setProperty("--classic-workspace-height", `${Math.max(180, window.innerHeight - headerHeight - (classicView.status ? 19 : 0))}px`);
+  const statusHeight = classicView.status
+    ? studioMode ? app.querySelector<HTMLElement>(".toast")?.getBoundingClientRect().height ?? 24 : 19
+    : 0;
+  app.querySelector<HTMLElement>(".workspace")?.style.setProperty("--classic-workspace-height", `${Math.max(180, window.innerHeight - headerHeight - statusHeight)}px`);
 }
 
 function renderRuntimePanels(): void {
@@ -1377,6 +1490,8 @@ function renderRuntimePanels(): void {
   updateRuntimeLocks();
   restorePanelScroll(previousScroll);
   restoreFocus(previousFocus);
+  syncStudioLayout();
+  if (studioMode) syncStudioTopologies(app, state);
   const readout = app.querySelector<HTMLElement>(".runtime-readout");
   if (readout) {
     readout.innerHTML = `<span class="runtime-dot ${runtimeMode}"></span>
@@ -1406,12 +1521,30 @@ function closeHelp(): void {
 }
 
 function openTeachingScenarios(): void {
+  if (!teacherMode) return;
   helpOpen = false;
   helpReturnFocus = null;
   activeTab = "labs";
   if (classicMode) openClassicSettings("labs");
   render(false);
   app.querySelector<HTMLElement>('[data-classic-tab="labs"] select')?.focus({ preventScroll: true });
+}
+
+function toggleTeacherMode(): void {
+  teacherMode = !teacherMode;
+  if (teacherMode) {
+    setToast("Режим преподавателя включён до обновления страницы.");
+    openTeachingScenarios();
+    return;
+  }
+  const wasTrainingSet = runtimeMode === "training" && trainingTarget === "examples";
+  if (wasTrainingSet) stopAll();
+  closeClassicPanel("labs");
+  if (activeTab === "labs") activeTab = state.model === "perceptron" ? "perceptron" : "neurons";
+  setToast(wasTrainingSet
+    ? "Режим преподавателя выключен. Обучение набора остановлено; полученные веса сохранены."
+    : "Режим преподавателя выключен.");
+  closeHelp();
 }
 
 function replaceWith(next: NetworkState, message: string, tone: typeof toastTone = "success"): void {
@@ -1574,6 +1707,7 @@ function doExamplesEpoch(): boolean {
 }
 
 function startExamplesTraining(): void {
+  if (!teacherMode) return;
   const issue = trainingExamplesIssue(state) ?? trainingSupportIssue(state);
   if (issue) { setToast(issue, "warning"); render(); return; }
   stopAll();
@@ -1804,7 +1938,7 @@ app.addEventListener("focusin", (event) => {
 window.addEventListener("pointermove", (event) => {
   const patternDrag = patternResizeState;
   if (patternDrag && event.pointerId === patternDrag.pointerId) {
-    const columnWidth = classicMode ? 48 : 56;
+    const columnWidth = studioMode ? STUDIO_COLUMN_PITCH : classicMode ? 48 : 56;
     setPatternColumns(patternDrag.originColumns + (event.clientX - patternDrag.pointerX) / columnWidth);
     if (event.cancelable) event.preventDefault();
     return;
@@ -1835,8 +1969,8 @@ window.addEventListener("blur", () => {
   cancelPatternResize();
 });
 window.addEventListener("resize", () => window.requestAnimationFrame(() => {
-  if (window.innerWidth > 820) setClassicNeuronFieldWidth(classicNeuronFieldPreferredWidth, false);
   resizeClassicWorkspace();
+  if (studioMode || window.innerWidth > 820) setClassicNeuronFieldWidth(classicNeuronFieldPreferredWidth, false);
   clampClassicWindowPositions();
 }));
 // Update only this control: fullscreen must not replace editors or reset a run.
@@ -1844,14 +1978,15 @@ document.addEventListener("fullscreenchange", syncFullscreenControl);
 
 app.addEventListener("dblclick", (event) => {
   if (!classicMode || !(event.target as HTMLElement).closest(".classic-workspace-splitter")) return;
-  setClassicNeuronFieldWidth(CLASSIC_NEURON_FIELD_DEFAULT_WIDTH);
+  if (studioMode) { rememberStudioColumns(4); syncStudioLayout(); }
+  else setClassicNeuronFieldWidth(CLASSIC_NEURON_FIELD_DEFAULT_WIDTH);
 });
 
 app.addEventListener("click", (event) => {
   const clicked = event.target as HTMLElement;
   if (helpOpen && event.altKey && clicked.closest("#help-title")) {
     event.preventDefault();
-    openTeachingScenarios();
+    toggleTeacherMode();
     return;
   }
   if (classicMode) {
@@ -1866,6 +2001,8 @@ app.addEventListener("click", (event) => {
   if (!button) return;
   if (button instanceof HTMLButtonElement && button.disabled) return;
   const action = button.dataset.action;
+  if (!teacherMode && (action === "examples-start" || action?.startsWith("preset-") ||
+      ((action === "tab" || action === "classic-toggle-panel") && button.dataset.tab === "labs"))) return;
   if (action === "toggle-fullscreen") {
     void toggleFullscreen();
     return;
@@ -2255,7 +2392,9 @@ window.addEventListener("keydown", (event) => {
     if (event.key === "ArrowLeft" || event.key === "ArrowDown") nextColumns = patternColumns() - 1;
     if (event.key === "ArrowRight" || event.key === "ArrowUp") nextColumns = patternColumns() + 1;
     if (event.key === "Home") nextColumns = 1;
-    if (event.key === "End") nextColumns = state.perceptron.inputs;
+    if (event.key === "End") nextColumns = studioMode
+      ? Math.min(state.perceptron.inputs, studioColumnsThatFit(classicNeuronFieldBounds().max, studioFieldScrollbar()))
+      : state.perceptron.inputs;
     if (nextColumns !== undefined) {
       event.preventDefault();
       setPatternColumns(nextColumns);
@@ -2264,7 +2403,7 @@ window.addEventListener("keydown", (event) => {
   }
   if (classicMode && element.matches(".classic-workspace-splitter")) {
     const bounds = classicNeuronFieldBounds();
-    const increment = event.shiftKey ? CLASSIC_NEURON_CARD_WIDTH : 12;
+    const increment = studioMode ? STUDIO_COLUMN_PITCH : event.shiftKey ? CLASSIC_NEURON_CARD_WIDTH : 12;
     let nextWidth: number | undefined;
     if (event.key === "ArrowLeft") nextWidth = classicNeuronFieldWidth - increment;
     if (event.key === "ArrowRight") nextWidth = classicNeuronFieldWidth + increment;

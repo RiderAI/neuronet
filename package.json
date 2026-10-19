@@ -9,7 +9,7 @@
     "build:all": "npm run build && npm run build:classic",
     "build:pages": "node scripts/build-pages.mjs",
     "dev": "vite --host 127.0.0.1",
-    "preview": "vite preview --host 127.0.0.1",
+    "preview": "vite preview --outDir dist-pages --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

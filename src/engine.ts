@@ -587,6 +587,10 @@ function validateStateVersion(candidate: unknown, version: 1 | 2): boolean {
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+  if ("layout" in state && (!isRecord(state.layout) ||
+      !isInteger(state.layout.neuronColumns) || state.layout.neuronColumns < 1 ||
+      state.layout.neuronColumns > MAX_NEURONS)) return false;
+
   if (!state.weights.every((row) =>
     Array.isArray(row) && row.length === size && row.every(isFiniteNumber))) return false;
 

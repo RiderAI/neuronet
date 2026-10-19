@@ -71,6 +71,8 @@ export interface GraphSample {
 
 export interface NetworkState {
   schemaVersion: 2;
+  /** Optional presentation metadata; does not participate in calculations. */
+  layout?: { neuronColumns: number };
   title: string;
   model: ModelKind;
   neurons: Neuron[];
